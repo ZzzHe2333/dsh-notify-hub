@@ -11,6 +11,7 @@
 import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
+import { EXTRA_CHANNEL_TYPES, EXTRA_SECRET_FIELDS, EXTRA_REQUIRED_FIELDS, deliverExtra } from './channels.js'
 
 /** Prefix route owned by this plugin on the shared web server. */
 const API_BASE = '/dsh-notify-hub-api'
@@ -30,13 +31,14 @@ const LIMITS = {
   'serverchan-max': { bytes: 100000 },
 }
 /** Channel kinds this version delivers to. */
-const CHANNEL_TYPES = ['wecom', 'telegram', 'serverchan', 'serverchan-max']
+const CHANNEL_TYPES = ['wecom', 'telegram', 'serverchan', 'serverchan-max', ...EXTRA_CHANNEL_TYPES]
 /** Secret fields per channel kind: never returned to the page, blank keeps the stored value. */
 const SECRET_FIELDS = {
   wecom: ['webhook'],
   telegram: ['botToken'],
   serverchan: ['sendKey'],
   'serverchan-max': ['key'],
+  ...EXTRA_SECRET_FIELDS,
 }
 /** One channel's required non-secret fields, used for save warnings and send skips. */
 const REQUIRED_FIELDS = {
@@ -44,6 +46,7 @@ const REQUIRED_FIELDS = {
   telegram: ['botToken', 'chatId'],
   serverchan: ['sendKey'],
   'serverchan-max': ['key'],
+  ...EXTRA_REQUIRED_FIELDS,
 }
 /** Bounded in-memory delivery record shown in the dialog. */
 const MAX_RECENT = 30
@@ -118,7 +121,7 @@ function normalizeChannel(input, index) {
       : value.type,
     enabled: value.enabled !== false,
   }
-  for (const field of ['webhook', 'botToken', 'chatId', 'sendKey', 'key', 'baseUrl']) {
+  for (const field of ['webhook', 'botToken', 'chatId', 'sendKey', 'key', 'baseUrl', 'signSecret', 'deviceKey', 'topic', 'accessToken', 'token', 'appToken', 'authToken']) {
     if (typeof value[field] === 'string') channel[field] = value[field].trim()
   }
   if (Array.isArray(value.tags)) {
@@ -404,6 +407,8 @@ async function deliver(channel, message) {
       const tags = [...(channel.tags ?? []), ...message.tags]
       if (tags.length > 0) body.tags = [...new Set(tags)].slice(0, 8)
       await postJson(`${base}/v1/send`, body, { authorization: `Bearer ${channel.key}` })
+    } else if (EXTRA_CHANNEL_TYPES.includes(channel.type)) {
+      await deliverExtra(channel, message)
     } else {
       throw new Error(`unknown channel type ${channel.type}`)
     }
@@ -695,7 +700,8 @@ export function apply(ctx, config) {
   const mergeChannels = (incoming) => {
     const stored = new Map(settings.channels.map((channel) => [channel.id, channel]))
     return incoming.map((channel) => {
-      const previous = stored.get(channel.id)
+      const candidate = stored.get(channel.id)
+      const previous = candidate?.type === channel.type ? candidate : undefined
       const merged = { ...channel }
       for (const field of SECRET_FIELDS[channel.type] ?? []) {
         if (typeof merged[field] !== 'string' || merged[field].trim().length === 0) {

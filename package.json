@@ -1,9 +1,10 @@
 {
   "name": "@local/dsh-notify-hub",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "Notification hub: pushes a message to WeCom, Telegram, ServerChan, or ServerChan SCMax when a DSH task finishes or waits for approval.",
+  "description": "Multi-channel DSH notifications: WeCom, Telegram, ServerChan, Feishu, DingTalk, Bark, ntfy, Discord, Slack, PushPlus, Gotify and webhooks.",
   "type": "module",
+  "scripts": { "test": "node --test" },
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",
@@ -12,6 +13,7 @@
   },
   "files": [
     "index.js",
+    "channels.js",
     "client.js",
     "cordis.patch.yml",
     "locale/*.json",

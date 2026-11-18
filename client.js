@@ -24,7 +24,7 @@ window.__ModuleLoader__.load({
       'entry.tip': '任务完成或需要审批时发送通知',
       'entry.warn': '还没有启用中的推送渠道，点这里设置',
       'dialog.title': '通知设置',
-      'dialog.subtitle': '任务完成、需要审批时，把消息推送到企业微信、Telegram 或 Server酱。',
+      'dialog.subtitle': '任务完成、需要审批时，推送到你选择的多个平台。',
       'dialog.close': '关闭',
       'dialog.loading': '正在读取设置…',
       'dialog.configPath': '配置文件',
@@ -69,6 +69,24 @@ window.__ModuleLoader__.load({
       'type.telegram': 'Telegram 机器人',
       'type.serverchan': 'Server酱 Turbo',
       'type.serverchan-max': 'SCMax',
+      'type.feishu': '飞书机器人',
+      'type.dingtalk': '钉钉机器人',
+      'type.bark': 'Bark (iOS)',
+      'type.ntfy': 'ntfy',
+      'type.discord': 'Discord',
+      'type.slack': 'Slack',
+      'type.pushplus': 'PushPlus 推送加',
+      'type.gotify': 'Gotify',
+      'type.webhook': '通用 Webhook',
+      'field.signSecret': '加签密钥（可选）',
+      'field.deviceKey': '设备 Key',
+      'field.topic': '订阅主题 Topic',
+      'field.accessToken': '访问令牌（可选）',
+      'field.token': '推送令牌 Token',
+      'field.appToken': '应用令牌',
+      'field.authToken': 'Bearer 令牌（可选）',
+      'field.endpoint': 'Webhook 地址',
+      'field.baseUrlCustom': '服务器地址',
       'section.recent': '最近发送',
       'recent.empty': '本次运行还没有发送记录。',
       'recent.ok': '成功',
@@ -99,7 +117,7 @@ window.__ModuleLoader__.load({
       'entry.tip': 'Notify me when a task finishes or needs approval',
       'entry.warn': 'No enabled channel yet — open settings',
       'dialog.title': 'Notification settings',
-      'dialog.subtitle': 'Push a message to WeCom, Telegram, or ServerChan when a task finishes or waits for approval.',
+      'dialog.subtitle': 'Push notifications to any enabled service when a task finishes or needs approval.',
       'dialog.close': 'Close',
       'dialog.loading': 'Loading settings…',
       'dialog.configPath': 'Settings file',
@@ -144,6 +162,24 @@ window.__ModuleLoader__.load({
       'type.telegram': 'Telegram bot',
       'type.serverchan': 'ServerChan Turbo',
       'type.serverchan-max': 'SCMax',
+      'type.feishu': 'Feishu / Lark bot',
+      'type.dingtalk': 'DingTalk bot',
+      'type.bark': 'Bark (iOS)',
+      'type.ntfy': 'ntfy',
+      'type.discord': 'Discord',
+      'type.slack': 'Slack',
+      'type.pushplus': 'PushPlus',
+      'type.gotify': 'Gotify',
+      'type.webhook': 'Generic webhook',
+      'field.signSecret': 'Signing secret (optional)',
+      'field.deviceKey': 'Device key',
+      'field.topic': 'Topic',
+      'field.accessToken': 'Access token (optional)',
+      'field.token': 'Push token',
+      'field.appToken': 'Application token',
+      'field.authToken': 'Bearer token (optional)',
+      'field.endpoint': 'Webhook URL',
+      'field.baseUrlCustom': 'Server URL',
       'section.recent': 'Recent deliveries',
       'recent.empty': 'Nothing has been sent in this run yet.',
       'recent.ok': 'sent',
@@ -196,9 +232,28 @@ window.__ModuleLoader__.load({
       telegram: () => ({ type: 'telegram', name: t('type.telegram'), enabled: true, botToken: '', chatId: '' }),
       serverchan: () => ({ type: 'serverchan', name: t('type.serverchan'), enabled: true, sendKey: '' }),
       'serverchan-max': () => ({ type: 'serverchan-max', name: t('type.serverchan-max'), enabled: true, key: '', baseUrl: '', tags: [] }),
+      ...Object.fromEntries(['feishu', 'dingtalk', 'bark', 'ntfy', 'discord', 'slack', 'pushplus', 'gotify', 'webhook'].map((type) => [
+        type, () => ({ type, name: t(`type.${type}`), enabled: true }),
+      ])),
     }
 
-    const CHANNEL_ORDER = ['wecom', 'telegram', 'serverchan', 'serverchan-max']
+    const CHANNEL_ORDER = ['wecom', 'telegram', 'serverchan', 'serverchan-max', 'feishu', 'dingtalk', 'bark', 'ntfy', 'discord', 'slack', 'pushplus', 'gotify', 'webhook']
+    const EXTRA_FIELDS = {
+      feishu: [['webhook', 'field.endpoint', 'https://open.feishu.cn/open-apis/bot/v2/hook/…'], ['signSecret', 'field.signSecret', '']],
+      dingtalk: [['webhook', 'field.endpoint', 'https://oapi.dingtalk.com/robot/send?access_token=…'], ['signSecret', 'field.signSecret', 'SEC…']],
+      bark: [['deviceKey', 'field.deviceKey', 'Bark device key'], ['baseUrl', 'field.baseUrlCustom', 'https://api.day.app (optional)']],
+      ntfy: [['topic', 'field.topic', 'private-topic-name'], ['baseUrl', 'field.baseUrlCustom', 'https://ntfy.sh (optional)'], ['accessToken', 'field.accessToken', 'tk_…']],
+      discord: [['webhook', 'field.endpoint', 'https://discord.com/api/webhooks/…']],
+      slack: [['webhook', 'field.endpoint', 'https://hooks.slack.com/services/…']],
+      pushplus: [['token', 'field.token', 'PushPlus token']],
+      gotify: [['baseUrl', 'field.baseUrlCustom', 'https://gotify.example.com'], ['appToken', 'field.appToken', 'Gotify application token']],
+      webhook: [['webhook', 'field.endpoint', 'https://example.com/api/notify'], ['authToken', 'field.authToken', 'optional bearer token']],
+    }
+    const REQUIRED_UI_FIELDS = {
+      wecom: ['webhook'], telegram: ['botToken', 'chatId'], serverchan: ['sendKey'], 'serverchan-max': ['key'],
+      feishu: ['webhook'], dingtalk: ['webhook'], bark: ['deviceKey'], ntfy: ['topic'], discord: ['webhook'], slack: ['webhook'],
+      pushplus: ['token'], gotify: ['baseUrl', 'appToken'], webhook: ['webhook'],
+    }
 
     let channelSeq = 0
 
@@ -575,7 +630,7 @@ window.__ModuleLoader__.load({
           mono: true,
           onChange: (value) => { updateChannel(channel.id, { sendKey: value }) },
         }))
-      } else {
+      } else if (channel.type === 'serverchan-max') {
         fields.push(h(Field, {
           key: 'key',
           label: t('field.key'),
@@ -606,6 +661,18 @@ window.__ModuleLoader__.load({
             })
           },
         }))
+      } else {
+        for (const [name, label, placeholder] of EXTRA_FIELDS[channel.type] ?? []) {
+          fields.push(h(Field, {
+            key: name,
+            label: t(label),
+            hint: secretNote(name, secret[name]),
+            value: channel[name],
+            placeholder,
+            mono: true,
+            onChange: (value) => { updateChannel(channel.id, { [name]: value }) },
+          }))
+        }
       }
 
       return h('div', { className: 'dnh-card' }, [
@@ -662,12 +729,9 @@ window.__ModuleLoader__.load({
       if (!state.open) return null
 
       const settings = state.settings
-      const incomplete = settings.channels.filter((channel) => {
-        if (channel.type === 'wecom') return (channel.webhook ?? '').length === 0 && channel.hasSecret?.webhook !== true
-        if (channel.type === 'telegram') return (channel.botToken ?? '').length === 0 && channel.hasSecret?.botToken !== true
-        if (channel.type === 'serverchan') return (channel.sendKey ?? '').length === 0 && channel.hasSecret?.sendKey !== true
-        return (channel.key ?? '').length === 0 && channel.hasSecret?.key !== true
-      }).length
+      const incomplete = settings.channels.filter((channel) => (
+        (REQUIRED_UI_FIELDS[channel.type] ?? []).some((field) => !channel[field] && channel.hasSecret?.[field] !== true)
+      )).length
 
       let status = state.status
       let statusClass = ''
