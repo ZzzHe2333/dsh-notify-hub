@@ -1,0 +1,4 @@
+- insert:
+    - id: notify-hub
+      name: '@local/dsh-notify-hub'
+      config: {}

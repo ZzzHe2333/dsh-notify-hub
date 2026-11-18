@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Notification hub",
+    "description": "Push a message to WeCom, Telegram, ServerChan, or ServerChan SCMax when a task finishes or waits for approval.",
+    "detail": "docs/DETAIL.md"
+  }
+}

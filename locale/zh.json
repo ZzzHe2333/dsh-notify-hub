@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "通知推送",
+    "description": "任务完成或需要审批时，把消息推送到企业微信、Telegram、Server酱或 Server酱 SCMax。",
+    "detail": "docs/DETAIL.md"
+  }
+}
